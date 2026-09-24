@@ -1,0 +1,16 @@
+import express from 'express';
+import cors from 'cors';
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+dotenv.config();
+const app=express();
+app.use(cors());
+app.use(express.json());
+const orderSchema=new mongoose.Schema({orderId:{type:String,unique:true},customer:{name:String,phone:String,address:String},items:Array,total:Number,status:{type:String,default:'New'},createdAt:{type:Date,default:Date.now}});
+const Order=mongoose.model('Order',orderSchema);
+app.post('/api/orders',async(req,res)=>{try{const order=await Order.create(req.body);res.status(201).json({message:'Order saved',orderId:order.orderId});}catch(e){res.status(500).json({message:'Order could not be saved'});}});
+app.get('/api/orders',async(_,res)=>{try{res.json(await Order.find().sort({createdAt:-1}));}catch(e){res.status(500).json({message:'Database unavailable'});}});
+app.get('/api/health',(_,res)=>res.json({ok:true}));
+const port=process.env.PORT||5000;
+if(process.env.MONGODB_URI){mongoose.connect(process.env.MONGODB_URI).then(()=>console.log('MongoDB connected')).catch(e=>console.error('MongoDB connection failed',e.message));}else console.log('MONGODB_URI not set; orders will not be persisted.');
+app.listen(port,()=>console.log(`API running on http://localhost:${port}`));
